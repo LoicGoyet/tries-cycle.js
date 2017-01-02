@@ -1,13 +1,14 @@
 // Logic (functional)
-function main(DOMSource) {
-  const click$ = DOMSource;
+function main(sources) {
+  const click$ = sources.DOM;
 
-  return {
+  const sinks = {
     DOM: click$
       .startWith(null)
       .flatMapLatest(() => Rx.Observable.timer(0, 1000).map(i => `Seconds elapsed ${i}`)),
     Log: Rx.Observable.timer(0, 2000).map(i => 2 * i),
   };
+  return sinks;
 }
 
 // Drivers (imperative)
@@ -26,14 +27,16 @@ function consoleLogDriver(msg$) {
 }
 
 function run(mainFn, drivers) {
-  const proxyDOMSource = new Rx.Subject();
-  const sinks = mainFn(proxyDOMSource);
-  const DOMSource = drivers.DOM(sinks.DOM);
-  DOMSource.subscribe(click => proxyDOMSource.onNext(click));
+  const proxySources = {};
+  Object.keys(drivers).forEach(key => {
+    proxySources[key] = new Rx.Subject();
+  });
 
-  // Object.keys(drivers).forEach(key => {
-  //   drivers[key](sinks[key]);
-  // });
+  const sinks = mainFn(proxySources);
+  Object.keys(drivers).forEach(key => {
+    const source = drivers[key](sinks[key]);
+    source.subscribe(x => proxySources[key].onNext(x));
+  });
 }
 
 const driversFunctions = {
