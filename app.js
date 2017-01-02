@@ -26,22 +26,9 @@ function consoleLogDriver(msg$) {
   msg$.subscribe(msg => console.log(msg));
 }
 
-function run(mainFn, drivers) {
-  const proxySources = {};
-  Object.keys(drivers).forEach(key => {
-    proxySources[key] = new Rx.Subject();
-  });
-
-  const sinks = mainFn(proxySources);
-  Object.keys(drivers).forEach(key => {
-    const source = drivers[key](sinks[key]);
-    source.subscribe(x => proxySources[key].onNext(x));
-  });
-}
-
 const driversFunctions = {
   DOM: DOMDriver,
   Log: consoleLogDriver,
 }
 
-run(main, driversFunctions);
+Cycle.run(main, driversFunctions);
