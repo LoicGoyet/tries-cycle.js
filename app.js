@@ -1,36 +1,24 @@
-const {h, h1, span, makeDOMDriver} = CycleDOM;
+const {label, input, h1, hr, div, makeDOMDriver} = CycleDOM;
 
 // Logic (functional)
 function main(sources) {
-  const mouseover$ = sources.DOM.select('span').events('mouseover');
-
-  const sinks = {
-    DOM: mouseover$
-      .startWith(null)
-      .flatMapLatest(() =>
-        Rx.Observable.timer(0, 1000)
-          .map(i =>
-            h1([
-              span([
-                `Seconds elapsed ${i}`
-              ])
-            ])
-          )
-      ),
-    Log: Rx.Observable.timer(0, 2000).map(i => 2 * i),
-  };
-  return sinks;
+  const inputEv$ = sources.DOM.select('.field').events('input');
+  const name$ = inputEv$.map(ev => ev.target.value).startWith('');
+  return {
+    DOM: name$.map(name =>
+      div([
+        label('Name:'),
+        input('.field', {type: 'text'}),
+        hr(),
+        h1(`Hello ${name}!`)
+      ])
+    )
+  }
 }
 
 // Drivers (imperative)
-
-function consoleLogDriver(msg$) {
-  msg$.subscribe(msg => console.log(msg));
-}
-
 const driversFunctions = {
   DOM: makeDOMDriver('#app'),
-  Log: consoleLogDriver,
 }
 
 Cycle.run(main, driversFunctions);
